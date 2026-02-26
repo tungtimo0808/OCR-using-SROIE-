@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RECEIPT · NEURAL EXTRACTOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Animated background grid -->
+<div class="bg-grid"></div>
+<div class="bg-scan"></div>
+<div class="particles" id="particles"></div>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-group">
+      <div class="logo-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <rect x="2" y="2" width="36" height="36" rx="4" stroke="var(--accent)" stroke-width="1.5"/>
+          <path d="M8 12h24M8 18h16M8 24h20M8 30h12" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="30" cy="28" r="6" fill="var(--accent)" opacity="0.15" stroke="var(--accent)" stroke-width="1.5"/>
+          <path d="M28 28l1.5 1.5L32 26" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-text">NEURAL<span class="accent">OCR</span></div>
+        <div class="logo-sub">Receipt Information Extractor · v2.0</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot pulse"></span>
+      <span class="status-label">SYSTEM ONLINE</span>
+    </div>
+  </div>
+</header>
+
+<!-- Main layout -->
+<main class="main">
+
+  <!-- Left Panel: Upload -->
+  <section class="panel panel-upload">
+    <div class="panel-header">
+      <span class="panel-tag">INPUT</span>
+      <h2 class="panel-title">Image Upload</h2>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*" hidden>
+      <div class="drop-content" id="dropContent">
+        <div class="drop-icon">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="4" y="4" width="56" height="56" rx="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <path d="M32 20v16M24 28l8-8 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="16" y="42" width="32" height="4" rx="2" fill="currentColor" opacity="0.3"/>
+          </svg>
+        </div>
+        <div class="drop-text">Drop receipt image here</div>
+        <div class="drop-sub">or <span class="drop-link" id="browseBtn">browse from device</span></div>
+        <div class="drop-formats">PNG · JPG · JPEG · BMP · TIFF</div>
+      </div>
+
+      <!-- Preview inside drop zone -->
+      <div class="preview-inner" id="previewInner" style="display:none">
+        <img id="previewImg" alt="Preview">
+        <div class="preview-overlay">
+          <div class="preview-scan-line"></div>
+        </div>
+        <button class="btn-clear" id="clearBtn" title="Remove image">✕</button>
+        <div class="preview-badge">READY TO PROCESS</div>
+      </div>
+    </div>
+
+    <!-- File info bar -->
+    <div class="file-info" id="fileInfo" style="display:none">
+      <div class="file-info-row">
+        <span class="fi-label">FILE</span><span class="fi-val" id="fiName">—</span>
+      </div>
+      <div class="file-info-row">
+        <span class="fi-label">SIZE</span><span class="fi-val" id="fiSize">—</span>
+      </div>
+      <div class="file-info-row">
+        <span class="fi-label">TYPE</span><span class="fi-val" id="fiType">—</span>
+      </div>
+    </div>
+
+    <button class="btn-run" id="runBtn" disabled>
+      <span class="btn-run-inner">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9.5 8.5l5 3.5-5 3.5V8.5z" fill="currentColor"/>
+        </svg>
+        EXTRACT FIELDS
+      </span>
+      <div class="btn-glow"></div>
+    </button>
+  </section>
+
+  <!-- Center: Processing / Results -->
+  <section class="panel panel-result">
+    <div class="panel-header">
+      <span class="panel-tag">OUTPUT</span>
+      <h2 class="panel-title">Extracted Data</h2>
+      <div class="result-actions" id="resultActions" style="display:none">
+        <button class="btn-icon-action" id="copyBtn" title="Copy JSON">
+          <svg viewBox="0 0 20 20" fill="none"><rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M3 13V4a1 1 0 011-1h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </button>
+        <button class="btn-icon-action" id="downloadBtn" title="Download JSON">
+          <svg viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4M4 17h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Idle state -->
+    <div class="idle-state" id="idleState">
+      <div class="idle-graphic">
+        <div class="idle-ring ring1"></div>
+        <div class="idle-ring ring2"></div>
+        <div class="idle-ring ring3"></div>
+        <div class="idle-core">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M4 8h24M4 14h16M4 20h20M4 26h12" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <p class="idle-text">Upload a receipt image to begin neural extraction</p>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-state" id="loadingState" style="display:none">
+      <div class="loader-wrap">
+        <div class="loader-circle"></div>
+        <div class="loader-text" id="loaderText">INITIALIZING…</div>
+      </div>
+      <div class="step-list" id="stepList">
+        <div class="step-item" data-step="0">
+          <span class="step-dot"></span>
+          <span>Text Region Detection (FasterRCNN)</span>
+        </div>
+        <div class="step-item" data-step="1">
+          <span class="step-dot"></span>
+          <span>Character Recognition (TrOCR)</span>
+        </div>
+        <div class="step-item" data-step="2">
+          <span class="step-dot"></span>
+          <span>Information Extraction (LayoutLMv3)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result state -->
+    <div class="result-state" id="resultState" style="display:none">
+      <div class="result-grid">
+        <div class="field-card" data-field="company">
+          <div class="field-label">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            COMPANY
+          </div>
+          <div class="field-value" id="fCompany">—</div>
+          <div class="field-bar"></div>
+        </div>
+
+        <div class="field-card" data-field="date">
+          <div class="field-label">
+            <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 2v2M11 2v2M2 7h12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            DATE
+          </div>
+          <div class="field-value" id="fDate">—</div>
+          <div class="field-bar"></div>
+        </div>
+
+        <div class="field-card card-wide" data-field="address">
+          <div class="field-label">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 100 8A4 4 0 008 2z" stroke="currentColor" stroke-width="1.2"/><path d="M8 10v4M5 14h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/></svg>
+            ADDRESS
+          </div>
+          <div class="field-value" id="fAddress">—</div>
+          <div class="field-bar"></div>
+        </div>
+
+        <div class="field-card field-card-total" data-field="total">
+          <div class="field-label">
+            <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v6M6 7h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            TOTAL AMOUNT
+          </div>
+          <div class="field-value total-val" id="fTotal">—</div>
+          <div class="field-bar"></div>
+        </div>
+      </div>
+
+      <!-- Debug strip -->
+      <div class="debug-strip" id="debugStrip">
+        <div class="debug-title">PROCESSING METADATA</div>
+        <div class="debug-row">
+          <span class="dbg-k">Detected Boxes</span><span class="dbg-v" id="dBoxes">—</span>
+        </div>
+        <div class="debug-row">
+          <span class="dbg-k">Word Tokens</span><span class="dbg-v" id="dWords">—</span>
+        </div>
+        <div class="debug-row dbg-ocr-row">
+          <span class="dbg-k">OCR Preview</span>
+          <span class="dbg-v mono" id="dOcr">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-state" id="errorState" style="display:none">
+      <div class="error-icon">⚠</div>
+      <div class="error-msg" id="errorMsg">An unexpected error occurred.</div>
+      <button class="btn-retry" id="retryBtn">RETRY</button>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
